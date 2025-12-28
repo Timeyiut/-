@@ -17,20 +17,21 @@
             --text: #1c1c1e; --subtext: #8e8e93;
         }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 600px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
         h1 { font-size: 1.4rem; text-align: center; color: var(--primary); margin: 10px 0 20px; }
         h2 { font-size: 1rem; margin-top: 0; display: flex; align-items: center; gap: 8px; }
         
+        .input-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
         .input-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; color: var(--subtext); margin-bottom: 5px; }
-        input { 
-            width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; 
+        input, select { 
+            width: 100%; padding: 10px; border: 1px solid #d1d1d6; border-radius: 10px; 
             font-size: 1rem; box-sizing: border-box; outline: none;
         }
         
         button { 
-            width: 100%; padding: 15px; background: var(--primary); color: white; 
+            width: 100%; padding: 12px; background: var(--primary); color: white; 
             border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; margin-top: 10px;
         }
 
@@ -43,8 +44,9 @@
         .tip-box { background: #fff9e6; border-radius: 10px; padding: 12px; font-size: 0.85rem; color: #856404; margin-top: 15px; border: 1px solid #ffe58f; }
         
         /* 圖表樣式 */
-        .chart-container { height: 250px; margin-top: 10px; }
-        .btn-danger { background: #ff3b30; margin-top: 20px; font-size: 0.8rem; padding: 8px; opacity: 0.7; }
+        .chart-container { height: 260px; margin-top: 10px; }
+        .btn-danger { background: #ff3b30; margin-top: 20px; font-size: 0.8rem; padding: 8px; opacity: 0.9; color: white; border-radius: 10px; border: none; }
+        .small { font-size: 0.85rem; color: var(--subtext); }
     </style>
 </head>
 <body>
@@ -53,20 +55,58 @@
     <h1>📈 智能減重動態監測系統</h1>
 
     <div class="card">
+        <h2>👤 個人資料</h2>
+        <div class="input-grid">
+            <div class="input-group">
+                <label>身高 (cm)</label>
+                <input type="number" id="height" placeholder="167">
+            </div>
+            <div class="input-group">
+                <label>年齡 (歲)</label>
+                <input type="number" id="age" placeholder="33">
+            </div>
+            <div class="input-group">
+                <label>生理/性別</label>
+                <select id="sex">
+                    <option value="male">男性</option>
+                    <option value="female">女性</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>活動強度</label>
+                <select id="activity">
+                    <option value="1.2">久坐 / 輕度活動 (1.2)</option>
+                    <option value="1.375">輕度活動 (1.375)</option>
+                    <option value="1.55">中度活動 (1.55)</option>
+                    <option value="1.725">高度活動 (1.725)</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button id="saveProfileBtn" onclick="saveProfile()">儲存個人設定</button>
+            <button style="width:auto; padding:10px;" onclick="loadDefaultProfile()" class="small">載入預設</button>
+        </div>
+    </div>
+
+    <div class="card">
         <h2>🗓️ 今日數據錄入</h2>
-        <div class="input-group">
-            <label>今日體重 (kg)</label>
-            <input type="number" id="weight" step="0.1" placeholder="90.0">
+        <div class="input-grid">
+            <div class="input-group">
+                <label>今日體重 (kg)</label>
+                <input type="number" id="weight" step="0.1" placeholder="90.0">
+            </div>
+            <div class="input-group">
+                <label>今日 Garmin 運動消耗 (kcal)</label>
+                <input type="number" id="garmin" placeholder="300">
+            </div>
+            <div class="input-group">
+                <label>今日 FatSecret 攝取 (kcal)</label>
+                <input type="number" id="fatsecret" placeholder="2000">
+            </div>
+            <div style="align-self:end;" class="input-group">
+                <button onclick="saveAndCalculate()">儲存並計算今日方針</button>
+            </div>
         </div>
-        <div class="input-group">
-            <label>今日 Garmin 運動消耗 (kcal)</label>
-            <input type="number" id="garmin" placeholder="300">
-        </div>
-        <div class="input-group">
-            <label>今日 FatSecret 攝取 (kcal)</label>
-            <input type="number" id="fatsecret" placeholder="2000">
-        </div>
-        <button onclick="saveAndCalculate()">儲存並計算今日方針</button>
     </div>
 
     <div class="card">
@@ -78,6 +118,7 @@
 
     <div class="card result-box" id="resultArea">
         <h2>🎯 每日滾動修正方針</h2>
+        <div style="font-size: 0.9rem;">預估每日基礎代謝 (BMR): <span id="bmrDisplay">0</span> kcal</div>
         <div style="font-size: 0.9rem;">預估每日總消耗 (TDEE): <span id="tdeeDisplay">0</span> kcal</div>
         <div style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;">建議攝取：<span id="targetIntake">0</span> kcal</div>
         
@@ -96,26 +137,95 @@
 <script>
 let myChart;
 
+/* ---------- 存取與格式化歷史資料 ---------- */
+/**
+ * 取得歷史紀錄，並嘗試將舊格式日期遷移到 ISO (YYYY-MM-DD)
+ */
+function getHistory() {
+    const raw = JSON.parse(localStorage.getItem('diet_history') || '[]');
+    return raw.map(item => {
+        if (!item || !item.date) return item;
+        // 若已是 ISO 就不動，若含 '/' 嘗試解析
+        if (item.date.indexOf('/') !== -1) {
+            const d = new Date(item.date);
+            if (!isNaN(d)) item.date = d.toISOString().slice(0,10);
+        }
+        return item;
+    });
+}
+
+function saveHistory(history) {
+    // 確保日期正規化為 YYYY-MM-DD
+    const norm = history.map(h => {
+        if (h.date && h.date.indexOf('/') !== -1) {
+            const d = new Date(h.date);
+            if (!isNaN(d)) h.date = d.toISOString().slice(0,10);
+        }
+        return h;
+    });
+    localStorage.setItem('diet_history', JSON.stringify(norm));
+}
+
+/* ---------- 個人設定（profile） ---------- */
+function loadProfile() {
+    const raw = JSON.parse(localStorage.getItem('diet_profile') || '{}');
+    return {
+        height: raw.height || 167,
+        age: raw.age || 33,
+        sex: raw.sex || 'male',
+        activity: raw.activity || 1.2
+    };
+}
+
+function saveProfile() {
+    const h = parseFloat(document.getElementById('height').value) || 167;
+    const a = parseInt(document.getElementById('age').value) || 33;
+    const s = document.getElementById('sex').value;
+    const act = parseFloat(document.getElementById('activity').value) || 1.2;
+    const profile = { height: h, age: a, sex: s, activity: act };
+    localStorage.setItem('diet_profile', JSON.stringify(profile));
+    alert('已儲存個人設定');
+}
+
+function loadDefaultProfile() {
+    const p = loadProfile();
+    document.getElementById('height').value = p.height;
+    document.getElementById('age').value = p.age;
+    document.getElementById('sex').value = p.sex;
+    document.getElementById('activity').value = p.activity;
+}
+
+/* ---------- 啟動時處理 ---------- */
 window.onload = function() {
     loadChart();
-    // 自動填入最後一次錄入的體重
+    loadDefaultProfile();
+    // 自動填入最後一次錄入的體重（如果有）
     const history = getHistory();
     if (history.length > 0) {
-        document.getElementById('weight').value = history[history.length - 1].w;
+        const last = history[history.length - 1];
+        if (last && Number.isFinite(Number(last.w))) {
+            document.getElementById('weight').value = last.w;
+        }
     }
 };
 
-function getHistory() {
-    return JSON.parse(localStorage.getItem('diet_history') || '[]');
-}
-
+/* ---------- 主要計算與 UI 更新 ---------- */
 function saveAndCalculate() {
     const w = parseFloat(document.getElementById('weight').value);
     const g = parseFloat(document.getElementById('garmin').value) || 0;
     const f = parseFloat(document.getElementById('fatsecret').value) || 0;
-    const today = new Date().toLocaleDateString();
 
-    if(!w) return alert("請輸入體重");
+    const profile = loadProfile();
+    const h = Number(profile.height);
+    const age = Number(profile.age);
+    const sex = profile.sex;
+    const activity = Number(profile.activity);
+
+    const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+
+    if (!Number.isFinite(w) || w <= 0) return alert("請輸入有效的體重（大於 0 的數字）");
+    if (!Number.isFinite(h) || h <= 0) return alert("請先儲存或輸入有效的身高");
+    if (!Number.isFinite(age) || age <= 0) return alert("請先儲存或輸入有效的年齡");
 
     // 更新歷史紀錄
     let history = getHistory();
@@ -126,16 +236,19 @@ function saveAndCalculate() {
         history.push({ date: today, w: w, g: g, f: f });
     }
     // 只保留最近 30 天紀錄
-    if (history.length > 30) history.shift();
-    localStorage.setItem('diet_history', JSON.stringify(history));
+    if (history.length > 30) history = history.slice(history.length - 30);
+    saveHistory(history);
 
-    // 計算邏輯
-    const bmr = 10 * w + 6.25 * 167 - 5 * 33 + 5;
-    const tdee = bmr * 1.2 + g;
+    // BMR（Mifflin–St Jeor）
+    // 男性: +5 ; 女性: -161
+    const s = (sex === 'male') ? 5 : -161;
+    const bmr = 10 * w + 6.25 * h - 5 * age + s;
+    const tdee = bmr * activity + g;
     let target = Math.max(bmr, tdee - 500);
 
     // UI 顯示
     document.getElementById('resultArea').style.display = 'block';
+    document.getElementById('bmrDisplay').innerText = Math.round(bmr);
     document.getElementById('tdeeDisplay').innerText = Math.round(tdee);
     document.getElementById('targetIntake').innerText = Math.round(target);
     document.getElementById('carb').innerText = Math.round(target*0.4/4) + "g";
@@ -153,22 +266,37 @@ function saveAndCalculate() {
     updateChart();
 }
 
+/* ---------- 圖表相關 ---------- */
+function formatLabelFromDate(isoDate) {
+    try {
+        const d = new Date(isoDate);
+        if (!isNaN(d)) {
+            return (d.getMonth()+1) + '-' + String(d.getDate()).padStart(2,'0');
+        }
+    } catch(e){}
+    return isoDate || '';
+}
+
 function loadChart() {
     const ctx = document.getElementById('weightChart').getContext('2d');
     const history = getHistory();
-    
+
+    const labels = history.map(h => formatLabelFromDate(h.date));
+    const data = history.map(h => h.w);
+
     myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: history.map(h => h.date.split('/')[2]), // 只顯示日期
+            labels: labels,
             datasets: [{
                 label: '體重 (kg)',
-                data: history.map(h => h.w),
+                data: data,
                 borderColor: '#007aff',
                 backgroundColor: 'rgba(0, 122, 255, 0.1)',
                 borderWidth: 2,
                 fill: true,
-                tension: 0.3
+                tension: 0.3,
+                pointRadius: 4
             }]
         },
         options: {
@@ -183,11 +311,13 @@ function loadChart() {
 
 function updateChart() {
     const history = getHistory();
-    myChart.data.labels = history.map(h => h.date.split('/')[2]);
+    if (!myChart) { loadChart(); return; }
+    myChart.data.labels = history.map(h => formatLabelFromDate(h.date));
     myChart.data.datasets[0].data = history.map(h => h.w);
     myChart.update();
 }
 
+/* ---------- 清除與輔助 ---------- */
 function clearHistory() {
     if(confirm("確定要刪除所有歷史紀錄嗎？")) {
         localStorage.removeItem('diet_history');
