@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>糖尿病動態減重系統</title>
+    <title>智能控糖減重系統 - 每日版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
@@ -17,61 +19,65 @@
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
         .container { max-width: 500px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h1 { font-size: 1.4rem; text-align: center; color: var(--primary); margin-bottom: 20px; }
+        h1 { font-size: 1.4rem; text-align: center; color: var(--primary); margin: 10px 0 20px; }
         h2 { font-size: 1rem; margin-top: 0; display: flex; align-items: center; gap: 8px; }
         
-        .input-group { margin-bottom: 15px; }
+        .input-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; color: var(--subtext); margin-bottom: 5px; }
         input { 
             width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; 
-            font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.3s;
+            font-size: 1rem; box-sizing: border-box; outline: none;
         }
-        input:focus { border-color: var(--primary); }
         
         button { 
             width: 100%; padding: 15px; background: var(--primary); color: white; 
-            border: none; border-radius: 12px; font-weight: 600; font-size: 1rem;
-            cursor: pointer; transition: 0.2s;
+            border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; margin-top: 10px;
         }
-        button:active { transform: scale(0.98); opacity: 0.9; }
 
         .result-box { display: none; border-top: 4px solid var(--primary); }
-        .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; text-align: center; }
-        .macro-item { background: #f8f9ff; padding: 10px; border-radius: 8px; }
+        .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .macro-item { background: #f8f9ff; padding: 10px; border-radius: 8px; text-align: center; }
         .macro-label { font-size: 0.75rem; color: var(--subtext); }
         .macro-val { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
 
-        .status-bar { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-top: 10px; font-weight: 600; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
         .tip-box { background: #fff9e6; border-radius: 10px; padding: 12px; font-size: 0.85rem; color: #856404; margin-top: 15px; border: 1px solid #ffe58f; }
         
-        .footer-note { text-align: center; font-size: 0.7rem; color: var(--subtext); margin-top: 20px; }
+        /* 圖表樣式 */
+        .chart-container { height: 250px; margin-top: 10px; }
+        .btn-danger { background: #ff3b30; margin-top: 20px; font-size: 0.8rem; padding: 8px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>智能減重滾動修正系統</h1>
+    <h1>📈 智能減重動態監測系統</h1>
 
     <div class="card">
-        <h2>📊 基礎數據設定</h2>
+        <h2>🗓️ 今日數據錄入</h2>
         <div class="input-group">
-            <label>目前體重 (kg)</label>
-            <input type="number" id="weight" placeholder="例如: 90" step="0.1">
+            <label>今日體重 (kg)</label>
+            <input type="number" id="weight" step="0.1" placeholder="90.0">
         </div>
         <div class="input-group">
-            <label>Garmin 日平均運動消耗 (kcal)</label>
-            <input type="number" id="garmin" placeholder="活動熱量紀錄">
+            <label>今日 Garmin 運動消耗 (kcal)</label>
+            <input type="number" id="garmin" placeholder="300">
         </div>
         <div class="input-group">
-            <label>FatSecret 日平均攝取 (kcal)</label>
-            <input type="number" id="fatsecret" placeholder="飲食紀錄總和">
+            <label>今日 FatSecret 攝取 (kcal)</label>
+            <input type="number" id="fatsecret" placeholder="2000">
         </div>
-        <button onclick="runRollingUpdate()">計算並儲存進度</button>
+        <button onclick="saveAndCalculate()">儲存並計算今日方針</button>
+    </div>
+
+    <div class="card">
+        <h2>📉 體重變化趨勢</h2>
+        <div class="chart-container">
+            <canvas id="weightChart"></canvas>
+        </div>
     </div>
 
     <div class="card result-box" id="resultArea">
-        <h2>🎯 滾動修正方針</h2>
+        <h2>🎯 每日滾動修正方針</h2>
         <div style="font-size: 0.9rem;">預估每日總消耗 (TDEE): <span id="tdeeDisplay">0</span> kcal</div>
         <div style="font-size: 1.2rem; font-weight: bold; margin-top: 5px;">建議攝取：<span id="targetIntake">0</span> kcal</div>
         
@@ -81,81 +87,113 @@
             <div class="macro-item"><div class="macro-label">脂肪(30%)</div><div class="macro-val" id="fat">0g</div></div>
         </div>
 
-        <div class="status-bar" id="statusBar">
-            <div class="dot" id="statusDot"></div>
-            <span id="statusText">檢測中...</span>
-        </div>
-
-        <div class="tip-box" id="diabetesTip">
-            請輸入數據後查看個人化提醒。
-        </div>
+        <div class="tip-box" id="diabetesTip"></div>
     </div>
 
-    <div class="footer-note">
-        設計目標：BMI 28.5 (約 80kg) | 糖尿病安全模式已啟動
-    </div>
+    <button class="btn-danger" onclick="clearHistory()">重置所有紀錄</button>
 </div>
 
 <script>
-// 載入 localStorage
+let myChart;
+
 window.onload = function() {
-    if(localStorage.getItem('user_weight')) {
-        document.getElementById('weight').value = localStorage.getItem('user_weight');
-        document.getElementById('garmin').value = localStorage.getItem('user_garmin');
-        document.getElementById('fatsecret').value = localStorage.getItem('user_intake');
-        runRollingUpdate();
+    loadChart();
+    // 自動填入最後一次錄入的體重
+    const history = getHistory();
+    if (history.length > 0) {
+        document.getElementById('weight').value = history[history.length - 1].w;
     }
 };
 
-function runRollingUpdate() {
+function getHistory() {
+    return JSON.parse(localStorage.getItem('diet_history') || '[]');
+}
+
+function saveAndCalculate() {
     const w = parseFloat(document.getElementById('weight').value);
     const g = parseFloat(document.getElementById('garmin').value) || 0;
     const f = parseFloat(document.getElementById('fatsecret').value) || 0;
+    const today = new Date().toLocaleDateString();
 
-    if(!w) return alert("請輸入當前體重");
+    if(!w) return alert("請輸入體重");
 
-    // 1. 儲存數據
-    localStorage.setItem('user_weight', w);
-    localStorage.setItem('user_garmin', g);
-    localStorage.setItem('user_intake', f);
+    // 更新歷史紀錄
+    let history = getHistory();
+    const existingIndex = history.findIndex(item => item.date === today);
+    if (existingIndex > -1) {
+        history[existingIndex] = { date: today, w: w, g: g, f: f };
+    } else {
+        history.push({ date: today, w: w, g: g, f: f });
+    }
+    // 只保留最近 30 天紀錄
+    if (history.length > 30) history.shift();
+    localStorage.setItem('diet_history', JSON.stringify(history));
 
-    // 2. 運動生理學計算 (Mifflin-St Jeor)
-    const bmr = 10 * w + 6.25 * 167 - 5 * 33 + 5; // 基礎代謝
-    const tdee = bmr * 1.2 + g; // TDEE = 基本活動 + 運動消耗
-    
-    // 3. 熱量赤字邏輯：目標 TDEE - 500，但不得低於 BMR (保護糖尿病代謝)
-    let target = tdee - 500;
-    if (target < bmr) target = bmr;
-
-    // 4. 三大營養素分配 (糖尿病友善 4:3:3)
-    const carbG = (target * 0.4) / 4;
-    const proG = (target * 0.3) / 4;
-    const fatG = (target * 0.3) / 9;
+    // 計算邏輯
+    const bmr = 10 * w + 6.25 * 167 - 5 * 33 + 5;
+    const tdee = bmr * 1.2 + g;
+    let target = Math.max(bmr, tdee - 500);
 
     // UI 顯示
     document.getElementById('resultArea').style.display = 'block';
     document.getElementById('tdeeDisplay').innerText = Math.round(tdee);
     document.getElementById('targetIntake').innerText = Math.round(target);
-    document.getElementById('carb').innerText = Math.round(carbG) + "g";
-    document.getElementById('pro').innerText = Math.round(proG) + "g";
-    document.getElementById('fat').innerText = Math.round(fatG) + "g";
+    document.getElementById('carb').innerText = Math.round(target*0.4/4) + "g";
+    document.getElementById('pro').innerText = Math.round(target*0.3/4) + "g";
+    document.getElementById('fat').innerText = Math.round(target*0.3/9) + "g";
 
-    // 5. 糖尿病安全警示與狀態
-    const dot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
+    // 糖尿病提醒
     const tip = document.getElementById('diabetesTip');
-
-    if (g > 600) {
-        dot.style.background = "var(--warn)";
-        statusText.innerText = "高運動量模式";
-        tip.innerHTML = "<b>⚠️ 安全提醒：</b> 偵測到高運動消耗。運動前後請各測量一次血糖。若運動後血糖低於 100 mg/dL，請補充 1份 (15g) 碳水。";
+    if (g > 500) {
+        tip.innerHTML = "<b>⚠️ 高強度提醒：</b> 運動量較大，運動前若血糖低於 110 mg/dL，請補充 15g 快醣。";
     } else {
-        dot.style.background = "var(--safe)";
-        statusText.innerText = "穩定減脂模式";
-        tip.innerHTML = "<b>💡 營養叮嚀：</b> 目前熱量設定安全。請優先攝取低 GI 澱粉（如燕麥、糙米），並確保每餐都有足夠蛋白質以維持肌肉量。";
+        tip.innerHTML = "<b>💡 營養叮嚀：</b> 保持低 GI 進食順序：纖維質 → 蛋白質 → 澱粉。";
+    }
+
+    updateChart();
+}
+
+function loadChart() {
+    const ctx = document.getElementById('weightChart').getContext('2d');
+    const history = getHistory();
+    
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: history.map(h => h.date.split('/')[2]), // 只顯示日期
+            datasets: [{
+                label: '體重 (kg)',
+                data: history.map(h => h.w),
+                borderColor: '#007aff',
+                backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: false }
+            }
+        }
+    });
+}
+
+function updateChart() {
+    const history = getHistory();
+    myChart.data.labels = history.map(h => h.date.split('/')[2]);
+    myChart.data.datasets[0].data = history.map(h => h.w);
+    myChart.update();
+}
+
+function clearHistory() {
+    if(confirm("確定要刪除所有歷史紀錄嗎？")) {
+        localStorage.removeItem('diet_history');
+        location.reload();
     }
 }
 </script>
-
 </body>
 </html>
