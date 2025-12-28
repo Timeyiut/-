@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+    <title>糖尿病友減重滾動修正系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c; }
+        body { font-family: -apple-system, sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h2 { color: var(--primary); font-size: 1.2rem; margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; color: #666; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .result-box { background: #e8f5e9; padding: 15px; border-radius: 10px; border-left: 5px solid var(--accent); }
+        .warning { background: #fff3e0; border-left: 5px solid #ff9800; padding: 10px; font-size: 0.85rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>📊 數據輸入 (連動 Garmin/FatSecret)</h2>
+        <div class="input-group">
+            <label>目前體重 (kg)</label>
+            <input type="number" id="currentWeight" value="90" step="0.1">
+        </div>
+        <div class="input-group">
+            <label>過去 7 天平均每日攝取 (FatSecret)</label>
+            <input type="number" id="avgIntake" value="2000">
+        </div>
+        <div class="input-group">
+            <label>過去 7 天平均運動消耗 (Garmin)</label>
+            <input type="number" id="avgExercise" value="400">
+        </div>
+        <button onclick="calculateProgress()">執行滾動式修正</button>
+    </div>
+
+    <div class="card result-box" id="resultCard" style="display:none;">
+        <h2>🎯 下週執行方針</h2>
+        <p id="tdeeText"></p>
+        <p id="targetIntake" style="font-size: 1.2rem; font-weight: bold; color: var(--accent);"></p>
+        <div class="warning" id="dmWarning">
+            ⚠️ <b>糖尿病安全提醒：</b><br>
+            偵測到熱量缺口，運動前請監測血糖，若低於 100mg/dL 請補充 15g 快醣。
+        </div>
+    </div>
+
+    <script>
+        function calculateProgress() {
+            const weight = parseFloat(document.getElementById('currentWeight').value);
+            const intake = parseFloat(document.getElementById('avgIntake').value);
+            const exercise = parseFloat(document.getElementById('avgExercise').value);
+            
+            // 基礎參數
+            const bmr = 1850; 
+            const targetWeight = 80; // BMI 28.5 目標
+            
+            // 滾動 TDEE 計算 (假設性演算法：簡化版)
+            // 真實 TDEE = 攝取熱量 + (體重變化 * 7700 / 7 天)
+            // 這裡我們先設定一個建議攝取值
+            let suggestedIntake = Math.max(bmr, (intake + exercise) - 500);
+
+            document.getElementById('resultCard').style.display = 'block';
+            document.getElementById('tdeeText').innerHTML = `距離目標體重還剩: <b>${(weight - targetWeight).toFixed(1)} kg</b>`;
+            document.getElementById('targetIntake').innerHTML = `下週每日建議攝取：${suggestedIntake.toFixed(0)} kcal`;
+            
+            if (suggestedIntake <= 1850) {
+                document.getElementById('dmWarning').innerHTML += "<br>❗ 已達代謝下限，建議增加運動量而非削減飲食。";
+            }
+        }
+    </script>
+</body>
+</html>
